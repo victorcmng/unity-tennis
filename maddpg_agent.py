@@ -88,7 +88,7 @@ class Agent():
         self.n_agents = n_agents
         self.state_size = state_size
         self.action_size = action_size
-        self.seed = random.seed(random_seed)
+        #self.seed = random.seed(random_seed)
 
         # Hyperparameters
         self.buffer_size = buffer_size
@@ -115,22 +115,20 @@ class Agent():
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=self.lr_critic, weight_decay=self.weight_decay)
 
         # Noise process
-        self.noise = OUNoise((n_agents, action_size), random_seed)
+        self.noise = OUNoise(action_size, random_seed)
 
         # Replay memory
         self.memory = ReplayBuffer(device, action_size, self.buffer_size, self.batch_size, random_seed)
     
-    def step(self, state, action, reward, next_state, done, learn=True):
+    def step(self, state, action, reward, next_state, done):
         """Save experience in replay memory, and use random sample from buffer to learn."""
         # Save experience / reward
         self.memory.add(state, action, reward, next_state, done)
-        self.t_step += 1
 
         # Learn, if enough samples are available in memory        
-        if (len(self.memory) > self.batch_size) and (learn):
-            if self.t_step % self.update_local == 0:
-                experiences = self.memory.sample()
-                self.learn(experiences)
+        if len(self.memory) > self.batch_size:
+            experiences = self.memory.sample()
+            self.learn(experiences)
 
     def act(self, state, add_noise=True):
         """Returns actions for given state as per current policy."""
@@ -192,10 +190,7 @@ class Agent():
 
         # ----------------------- update target networks ----------------------- #
         self.soft_update(self.critic_local, self.critic_target)
-        self.soft_update(self.actor_local, self.actor_target)   
-           
-        self.actor_loss = actor_loss.data
-        self.critic_loss = critic_loss.data        
+        self.soft_update(self.actor_local, self.actor_target)      
 
     def soft_update(self, local_model, target_model):
         """Soft update model parameters.
